@@ -379,6 +379,7 @@ func (r *Runner) RunWorker(taskID string) (err error) {
 	childCmd.Stdin = nil
 	childCmd.Dir = rec.Request.WorkingDir
 	childCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	childCmd.Env = filterEnv(os.Environ(), "CLAUDECODE")
 	if err := childCmd.Start(); err != nil {
 		rec.Status = task.StatusFailed
 		rec.Error = fmt.Sprintf("start provider: %v", err)
@@ -542,6 +543,30 @@ func exitCodeFromError(err error) int {
 		return -1
 	}
 	return 1
+}
+
+// filterEnv returns a copy of environ with entries matching any of the given
+// variable names removed. This prevents parent-session markers (e.g. CLAUDECODE)
+// from leaking into child provider processes.
+func filterEnv(environ []string, names ...string) []string {
+	prefixes := make([]string, len(names))
+	for i, name := range names {
+		prefixes[i] = name + "="
+	}
+	filtered := make([]string, 0, len(environ))
+	for _, entry := range environ {
+		skip := false
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(entry, prefix) {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
 }
 
 func forwardSignals(logger *slog.Logger, child *os.Process, done <-chan struct{}) {

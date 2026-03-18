@@ -10,9 +10,9 @@ Go 实现的统一无头执行后端，用来调用三种非交互式 CLI：
 
 三家 CLI 的 headless 官方参数速查和当前 backend 的参数映射见：
 
-- [`docs/reference/headless-cli-cheatsheet.md`](/Users/est8/scripts/async-agent/docs/reference/headless-cli-cheatsheet.md)
+- [`docs/reference/headless-cli-cheatsheet.md`](./docs/reference/headless-cli-cheatsheet.md)
 - 完整 CLI 调用手册见：
-- [`docs/user/async-agent-backend-cli.md`](/Users/est8/scripts/async-agent/docs/user/async-agent-backend-cli.md)
+- [`docs/user/async-agent-backend-cli.md`](./docs/user/async-agent-backend-cli.md)
 
 ## Build
 

@@ -5,7 +5,7 @@
 ## Layout
 
 - [`SKILL.md`](/Users/est8/scripts/async-agent/async-agent-skill/SKILL.md)
-  skill 触发说明和执行约束。
+  skill 触发说明、执行约束，以及自包含的 binary 参数速查。
 - [`assets/`](/Users/est8/scripts/async-agent/async-agent-skill/assets)
   打包后的本地二进制资源。
 

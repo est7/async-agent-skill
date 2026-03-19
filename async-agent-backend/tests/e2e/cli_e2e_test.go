@@ -157,6 +157,60 @@ func TestCLI_CancelStopsLongRunningTask(t *testing.T) {
 	}
 }
 
+func TestCLI_TimeoutIncludesProviderDiagnosticInError(t *testing.T) {
+	env, binaryPath, storeRoot := setupHarness(t)
+	geminiPath := writeScript(t, filepath.Dir(binaryPath), "fake-gemini-timeout-error.sh", "#!/bin/sh\nwhile true; do\n  echo 'Attempt 1 failed with status 429. Retrying with backoff...' >&2\n  echo 'No capacity available for model gemini-3.1-pro-preview on the server' >&2\n  sleep 0.2\n done\n")
+	env = append(env, "ASYNC_AGENT_GEMINI_BIN="+geminiPath)
+
+	output := runCommand(t, env, binaryPath,
+		"run",
+		"--store-root", storeRoot,
+		"--provider", "gemini",
+		"--task", "hello",
+		"--timeout-seconds", "3",
+	)
+
+	payload := parseJSONMap(t, output)
+	if payload["status"] != "failed" {
+		t.Fatalf("expected failed status, got %v: %s", payload["status"], output)
+	}
+	errorText, _ := payload["error"].(string)
+	if !strings.Contains(errorText, "task timed out") {
+		t.Fatalf("expected timeout marker in error, got %s", output)
+	}
+	if !strings.Contains(errorText, "No capacity available for model gemini-3.1-pro-preview on the server") {
+		t.Fatalf("expected provider diagnostic in error, got %s", output)
+	}
+}
+
+func TestCLI_NonZeroExitIncludesProviderDiagnosticInError(t *testing.T) {
+	t.Parallel()
+
+	env, binaryPath, storeRoot := setupHarness(t)
+	codexPath := writeScript(t, filepath.Dir(binaryPath), "fake-codex-error.sh", "#!/bin/sh\necho 'fatal: config profile is invalid' >&2\nexit 2\n")
+	env = append(env, "ASYNC_AGENT_CODEX_BIN="+codexPath)
+
+	output := runCommand(t, env, binaryPath,
+		"run",
+		"--store-root", storeRoot,
+		"--provider", "codex",
+		"--task", "review diff",
+		"--subcommand", "exec",
+	)
+
+	payload := parseJSONMap(t, output)
+	if payload["status"] != "failed" {
+		t.Fatalf("expected failed status, got %v: %s", payload["status"], output)
+	}
+	errorText, _ := payload["error"].(string)
+	if !strings.Contains(errorText, "exit status 2") {
+		t.Fatalf("expected exit status marker in error, got %s", output)
+	}
+	if !strings.Contains(errorText, "fatal: config profile is invalid") {
+		t.Fatalf("expected provider diagnostic in error, got %s", output)
+	}
+}
+
 func TestMCP_InitializeAndToolsList(t *testing.T) {
 	t.Parallel()
 

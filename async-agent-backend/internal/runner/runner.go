@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -24,7 +25,10 @@ const (
 	cancelGracePeriod = 5 * time.Second
 	statusRepairDelay = 250 * time.Millisecond
 	statusRepairTries = 10
+	errorExcerptLimit = 600
 )
+
+var diagnosticLinePattern = regexp.MustCompile(`(?i)(error|failed|exception|timed out|timeout|quota|capacity|429|rate.?limit|resource.?exhausted|denied|forbidden|unauthorized|invalid|unavailable|fatal)`)
 
 // Runner owns task submission, worker execution and state inspection.
 type Runner struct {
@@ -428,13 +432,13 @@ func (r *Runner) RunWorker(taskID string) (err error) {
 	switch {
 	case errors.Is(waitErr, context.DeadlineExceeded), errors.Is(ctx.Err(), context.DeadlineExceeded):
 		rec.Status = task.StatusFailed
-		rec.Error = "task timed out"
+		rec.Error = enrichProviderError("task timed out", string(stderrBytes), normalizedResult)
 	case exitCode == -1:
 		rec.Status = task.StatusCancelled
 		rec.Error = "task cancelled"
 	case waitErr != nil:
 		rec.Status = task.StatusFailed
-		rec.Error = waitErr.Error()
+		rec.Error = enrichProviderError(waitErr.Error(), string(stderrBytes), normalizedResult)
 	default:
 		rec.Status = task.StatusSucceeded
 		rec.Error = ""
@@ -493,6 +497,75 @@ func newTaskID() string {
 
 func timePtr(t time.Time) *time.Time {
 	return &t
+}
+
+func enrichProviderError(base string, stderr string, normalized task.NormalizedResult) string {
+	diagnostic := diagnosticExcerpt(stderr)
+	if diagnostic == "" {
+		diagnostic = diagnosticExcerpt(normalized.FinalText)
+	}
+	if diagnostic == "" || strings.HasPrefix(diagnostic, "No output from ") {
+		return base
+	}
+	if strings.Contains(base, diagnostic) {
+		return base
+	}
+	if base == "" {
+		return diagnostic
+	}
+	return fmt.Sprintf("%s: %s", base, diagnostic)
+}
+
+func diagnosticExcerpt(raw string) string {
+	lines := nonEmptyTrimmedLines(raw)
+	if len(lines) == 0 {
+		return ""
+	}
+
+	selected := make([]string, 0, min(4, len(lines)))
+	for _, line := range lines {
+		if diagnosticLinePattern.MatchString(line) {
+			selected = appendUnique(selected, line)
+			if len(selected) == 4 {
+				break
+			}
+		}
+	}
+	if len(selected) == 0 {
+		for _, line := range lines {
+			selected = appendUnique(selected, line)
+			if len(selected) == 3 {
+				break
+			}
+		}
+	}
+
+	text := strings.Join(selected, "\n")
+	if len(text) > errorExcerptLimit {
+		return strings.TrimSpace(text[:errorExcerptLimit]) + "..."
+	}
+	return text
+}
+
+func nonEmptyTrimmedLines(raw string) []string {
+	parts := strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n")
+	lines := make([]string, 0, len(parts))
+	for _, part := range parts {
+		line := strings.TrimSpace(part)
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
+func appendUnique(lines []string, candidate string) []string {
+	for _, line := range lines {
+		if line == candidate {
+			return lines
+		}
+	}
+	return append(lines, candidate)
 }
 
 func processAlive(pid int) (bool, error) {

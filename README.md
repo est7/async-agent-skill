@@ -20,8 +20,8 @@
   主代码、测试和模块级说明。
 - [`async-agent-skill/`](/Users/est8/scripts/async-agent/async-agent-skill)
   面向本地调用方的 skill 封装，包含 `SKILL.md`、说明文档和打包后的 backend 二进制资源。
-- [`docs/`](/Users/est8/scripts/async-agent/docs)
-  长期文档，包含实现说明、调用手册和参考资料。
+- [`async-agent-backend/docs/`](/Users/est8/scripts/async-agent/async-agent-backend/docs)
+  后端模块的长期文档，包含实现说明、调用手册和参考资料。
 - [`CLAUDE.md`](/Users/est8/scripts/async-agent/CLAUDE.md)
   仓库级协作约束。
 
@@ -54,10 +54,10 @@ go build -o ./async-agent-backend ./cmd/async-agent-backend
 
 - 模块说明：[`async-agent-backend/README.md`](/Users/est8/scripts/async-agent/async-agent-backend/README.md)
 - skill 入口：[`async-agent-skill/README.md`](/Users/est8/scripts/async-agent/async-agent-skill/README.md)
-- CLI 手册：[`docs/user/async-agent-backend-cli.md`](/Users/est8/scripts/async-agent/docs/user/async-agent-backend-cli.md)
-- 实现说明：[`docs/implementation/async-agent-backend.md`](/Users/est8/scripts/async-agent/docs/implementation/async-agent-backend.md)
-- 参数速查：[`docs/reference/headless-cli-cheatsheet.md`](/Users/est8/scripts/async-agent/docs/reference/headless-cli-cheatsheet.md)
-- 文档索引：[`docs/README.md`](/Users/est8/scripts/async-agent/docs/README.md)
+- CLI 手册：[`async-agent-backend/docs/user/async-agent-backend-cli.md`](/Users/est8/scripts/async-agent/async-agent-backend/docs/user/async-agent-backend-cli.md)
+- 实现说明：[`async-agent-backend/docs/implementation/async-agent-backend.md`](/Users/est8/scripts/async-agent/async-agent-backend/docs/implementation/async-agent-backend.md)
+- 参数速查：[`async-agent-backend/docs/reference/headless-cli-cheatsheet.md`](/Users/est8/scripts/async-agent/async-agent-backend/docs/reference/headless-cli-cheatsheet.md)
+- 文档索引：[`async-agent-backend/docs/README.md`](/Users/est8/scripts/async-agent/async-agent-backend/docs/README.md)
 
 ## Current Model
 
